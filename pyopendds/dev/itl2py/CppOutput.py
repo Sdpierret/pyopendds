@@ -149,7 +149,7 @@ class CppOutput(Output):
             'Ref field_elem;',
             'field_value = PyList_New(0);',
             'for (int i = 0; i < cpp.length(); i++) {{',
-            '    {pyopendds_type} elem =' + 'CORBA::string_dup(cpp[i]);' if is_string else "cpp[i];",
+            '    {pyopendds_type} elem =' + ('CORBA::string_dup(cpp[i]);' if is_string else "cpp[i];"),
             '    field_elem = nullptr;',
             '    Type<{pyopendds_type}>::cpp_to_python(elem',
             '    #ifdef CPP11_IDL',
@@ -166,7 +166,7 @@ class CppOutput(Output):
         from_lines = [
             'cpp.length(PyList_Size(py));',
             'for (int i = 0; i < PyList_Size(py); i++) {{',
-            '    {pyopendds_type} elem =' + 'CORBA::string_dup(cpp[i]);' if is_string else "cpp[i];",
+            '    {pyopendds_type} elem =' + ('CORBA::string_dup(cpp[i]);' if is_string else "cpp[i];"),
             '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem',
             '#ifdef CPP11_IDL',
             '    ()',
