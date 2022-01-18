@@ -30,7 +30,7 @@ then this option becomes required.''')
 Name of the native Python extension package to create. By default this is \'_\'
 and the name of the Python package.''')
     argparser.add_argument('--default-encoding',
-        type=str, default='utf_8',
+        type=str, default='utf-8',
         help='Default encoding of strings. By default this is UTF-8.')
     argparser.add_argument('--dry-run', action='store_true',
         help='Don\'t create any files or directories, print out what would be done.')

@@ -13,6 +13,9 @@ PyObject* Errors::ReturnCodeError_ = nullptr;
 
 //TopicTypeBase::TopicTypes TopicTypeBase::topic_types_;
 
+#define DEFAULT_STRING_ENCODING "/*{{ default_encoding }}*/"
+
+
 /*{%- for type in types %}*/
 
 template<>

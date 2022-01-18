@@ -231,19 +231,19 @@ public:
         return PyUnicode_FromString("");
     }
 
-    static void cpp_to_python(const T& cpp, PyObject*& py)
+    static void cpp_to_python(const T& cpp, PyObject*& py, const char* encoding)
     {
-        PyObject* o = PyUnicode_Decode(string_data(cpp), string_length(cpp), "utf-8", "strict");
+        PyObject* o = PyUnicode_Decode(string_data(cpp), string_length(cpp), encoding, "strict");
         if (!o) throw Exception();
         py = o;
     }
 
-    static void python_to_cpp(PyObject* py, T& cpp)
+    static void python_to_cpp(PyObject* py, T& cpp, const char* encoding)
     {
         PyObject* repr = PyObject_Str(py);
         if (!repr) throw Exception();
 
-        PyObject* str = PyUnicode_AsEncodedString(repr, "utf-8", NULL);
+        PyObject* str = PyUnicode_AsEncodedString(repr, encoding, NULL);
         if (!str) throw Exception();
 
         const char *bytes = PyBytes_AS_STRING(str);
@@ -297,14 +297,7 @@ std::string
 #else
 ::TAO::String_Manager
 #endif
-s8_base;
-
-class s8: public s8_base{
-    public:
-    s8(const char* str): s8_base(str){}
-    s8(TAO::unbounded_basic_string_sequence<char>::const_element_type str): s8_base(CORBA::string_dup(str)){}
-    s8(TAO::unbounded_basic_string_sequence<char>::element_type str): s8_base(CORBA::string_dup(str)){}
-};
+s8;
 
 template<> class Type<s8>: public StringType<s8> {};
 // TODO: Put Other String/Char Types Here

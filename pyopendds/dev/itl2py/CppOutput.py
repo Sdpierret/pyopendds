@@ -144,17 +144,20 @@ class CppOutput(Output):
             'Ref field_value;',
         ]
         sequence_from_lines = []
+        is_string = sequence_type.base_type.is_string()
         to_lines = [
             'Ref field_elem;',
             'field_value = PyList_New(0);',
             'for (int i = 0; i < cpp.length(); i++) {{',
-            '    {pyopendds_type} elem = cpp[i];',
+            '    {pyopendds_type} elem =' + 'CORBA::string_dup(cpp[i]);' if is_string else "cpp[i];",
             '    field_elem = nullptr;',
             '    Type<{pyopendds_type}>::cpp_to_python(elem',
             '    #ifdef CPP11_IDL',
             '        ()',
             '    #endif',
-            '        , *field_elem);',
+            '        , *field_elem',
+            ', "{default_encoding}"' if is_string else '',
+            '    );',
             '    PyList_Append(py, *field_elem);',
             '}}'
         ]
@@ -163,11 +166,12 @@ class CppOutput(Output):
         from_lines = [
             'cpp.length(PyList_Size(py));',
             'for (int i = 0; i < PyList_Size(py); i++) {{',
-            '    {pyopendds_type} elem = cpp[i];',
+            '    {pyopendds_type} elem =' + 'CORBA::string_dup(cpp[i]);' if is_string else "cpp[i];",
             '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem',
             '#ifdef CPP11_IDL',
             '    ()',
             '#endif',
+            ', "{default_encoding}"' if is_string else '',
             '    );',
             '    cpp[i] = elem;',
             '}}'
