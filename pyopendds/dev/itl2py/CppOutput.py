@@ -144,7 +144,7 @@ class CppOutput(Output):
             'Ref field_value;',
         ]
         sequence_from_lines = []
-        is_string = sequence_type.base_type.is_string()
+        is_string = isinstance(sequence_type.base_type, PrimitiveType) and sequence_type.base_type.is_string()
         to_lines = [
             'Ref field_elem;',
             'field_value = PyList_New(0);',
