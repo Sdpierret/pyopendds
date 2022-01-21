@@ -108,16 +108,26 @@ def mk_tmp_package_proj(args: argparse.Namespace):
                           f'py{args.package_name}'],
                          cwd=f"{args.output_dir}/build")
 
+    setup_env = os.environ.copy()
+    setup_env[f"{args.package_name}_idl_DIR"] = f"{os.path.abspath(args.output_dir)}/build"
+    setup_cwd = f"{args.output_dir}/build/{args.package_name}_ouput"
+
+    # Optionally generate built distribution
+    if args.bdist:
+        setup_args = ['python', 'setup.py', 'bdist']
+        if args.bdist != 'default':
+            setup_args.append(f'--format={args.bdist}')
+        subprocess_check_run(setup_args, cwd=setup_cwd, env=setup_env)
+        print(f"Generated built distribution into: {setup_cwd}/dist")
+
     # Install the python package py[package_name]
-    tmp_env = os.environ.copy()
-    tmp_env[f"{args.package_name}_idl_DIR"] = f"{os.path.abspath(args.output_dir)}/build"
+    setup_args = ['pip', 'install', '.']
+    subprocess_check_run(setup_args, cwd=setup_cwd, env=setup_env)
 
-    subprocess_check_run(['pip', 'install', '.'],
-                         cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
-                         env=tmp_env)
-
-    # Cleanup temporary folder
-    if not args.user_defined_output:
+    # Cleanup temporary folder if necessary
+    if not args.bdist and not args.user_defined_output:
+        print(f"Cleaning up intermediate files: {args.output_dir}\n"
+              f"(Run pyidl with `-o` or `-b` to keep intermediate files.)")
         subprocess.run(['rm', '-r', args.output_dir])
 
 
@@ -144,6 +154,12 @@ def run():
                         help='the include paths needed by the IDL files, if any')
     parser.add_argument('-m', '--make-opts', metavar='',
                         help='arguments passed to make')
+    parser.add_argument('-b', '--bdist', nargs='?', const='default', metavar='',
+                        help='Generates a built distribution inside `OUTPUT_DIR/build/PACKAGE_NAME_output`. '
+                             'this arguments implies that the OUTPUT_DIR is not removed after the process. '
+                             'If no subargument is passed after this option, the default `python setup.py bdist` '
+                             'command is called. Otherwise, the bdist will be called with the specified format option '
+                             '(`python setup.py bdist --formats=[opts]`).')
 
     args = parser.parse_args()
     current_dir = os.getcwd()
