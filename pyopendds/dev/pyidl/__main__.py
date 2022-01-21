@@ -138,22 +138,30 @@ def mk_tmp_file(pathname: str, content: str):
 
 
 def run():
-    parser = argparse.ArgumentParser(description='Generate and install IDL Python class(es) from IDL file(s).'
-                                                 ' If no input file is given, all the idl files present in the current'
-                                                 ' directory will be embed into the output package.')
+    parser = argparse.ArgumentParser(
+        description='Generates and installs IDL Python class(es) from IDL file(s). If no input file is given, all the '
+                    'IDL files present in the current directory will be considered.')
     parser.add_argument('input_files', nargs='*',
-                        help='the .idl source files')
+                        help='The IDL source files. Be sure to specify all the #-included source files.')
     parser.add_argument('-p', '--package-name', metavar='',
-                        help='the python generated package name '
-                             '(default: the basename of the first input file)')
-    parser.add_argument('-d', '--pyopendds-ld', metavar='',
-                        help='the path to pyopendds project. You can also define PYOPENDDS_LD as environment variable')
+                        help='Gives the specified name to the package that will be installed. The package will be '
+                             'prefixed by "py-". Beware that there is no collision with already existing packages. '
+                             'Default: the basename of the first input file.')
     parser.add_argument('-o', '--output-dir', metavar='',
-                        help='create a directory for the generated sources.')
+                        help='Creates a directory for the intermediate files (output of cmake, make and itl2py). '
+                             'If this option is not specified, the output dir will be removed when the process '
+                             'succeed. Use this option to keep the OUTPUT_DIR so that rebuilding won\'t take too '
+                             'long. Default: pyidl-PACKAGE_NAME-build.')
     parser.add_argument('-i', '--include-paths', nargs='*', metavar='',
-                        help='the include paths needed by the IDL files, if any')
+                        help='Additional include paths needed by the IDL files, if any. Adding all source files into '
+                             'the input argument list already update already adds the corresponding paths.')
+    parser.add_argument('-d', '--pyopendds-ld', metavar='',
+                        help='[deprecated] The path to pyopendds project root folder. You can also define PYOPENDDS_LD '
+                             'as environment variable.')
     parser.add_argument('-m', '--make-opts', metavar='',
-                        help='arguments passed to make')
+                        help='Additional arguments to be passed to the make command. Be sure to specify the arguments '
+                             'enclosed with quotes, and to separate them with spaces. '
+                             '(e.g.: `pyidl -m"-j 4"` results into `make -j4`).')
     parser.add_argument('-b', '--bdist', nargs='?', const='default', metavar='',
                         help='Generates a built distribution inside `OUTPUT_DIR/build/PACKAGE_NAME_output`. '
                              'this arguments implies that the OUTPUT_DIR is not removed after the process. '
