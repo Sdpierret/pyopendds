@@ -11,9 +11,9 @@ class PythonOutput(Output):
 
     primitive_types = {  # (Python Type, Default Default Value)
         PrimitiveType.Kind.bool: ('bool', 'False'),
-        PrimitiveType.Kind.byte: ('UByte', 'UByte(0x00)'),
-        PrimitiveType.Kind.u8: ('UByte', 'UByte(0x00)'),
-        PrimitiveType.Kind.i8: ('Byte', 'Byte(0x00)'),
+        PrimitiveType.Kind.byte: ('int', "0"),
+        PrimitiveType.Kind.u8: ('int', "0"),
+        PrimitiveType.Kind.i8: ('int', "0"),
         PrimitiveType.Kind.u16: ('int', '0'),
         PrimitiveType.Kind.i16: ('int', '0'),
         PrimitiveType.Kind.u32: ('int', '0'),
@@ -22,7 +22,7 @@ class PythonOutput(Output):
         PrimitiveType.Kind.i64: ('int', '0'),
         PrimitiveType.Kind.f32: ('float', '0.0'),
         PrimitiveType.Kind.f64: ('float', '0.0'),
-        PrimitiveType.Kind.c8: ('Byte', 'Byte(0x00)'),
+        PrimitiveType.Kind.c8: ('str', "'\\x00'"),
         PrimitiveType.Kind.c16: ('str', "'\\x00'"),
         PrimitiveType.Kind.s8: ('str', "''"),
         PrimitiveType.Kind.s16: ('str', "''"),
