@@ -28,14 +28,12 @@ public:
       mod_ss << "./*{{name}}*/";
       /*{% endfor -%}*/
       Ref module = PyImport_ImportModule(mod_ss.str().c_str());
-
       if (!module) {
         std::stringstream msg;
         msg << "Could not import module ";
         msg << mod_ss.str();
         throw Exception(msg.str().c_str(), PyExc_ImportError);
       }
-
       python_class = PyObject_GetAttrString(*module, "/*{{ type.local_name }}*/");
       if (!python_class) {
         std::stringstream msg;
@@ -45,6 +43,7 @@ public:
         throw Exception(msg.str().c_str(), PyExc_ImportError);
       }
     }
+
     return python_class;
   }
 
