@@ -144,34 +144,75 @@ class CppOutput(Output):
             'Ref field_value;',
         ]
         sequence_from_lines = []
-        to_lines = [
-            'Ref field_elem;',
-            'field_value = PyList_New(0);',
-            'for (int i = 0; i < cpp.length(); i++) {{',
-            '    {pyopendds_type} elem = cpp[i];',
-            '    field_elem = nullptr;',
-            '    Type<{pyopendds_type}>::cpp_to_python(elem',
-            '    #ifdef CPP11_IDL',
-            '        ()',
-            '    #endif',
-            '        , *field_elem);',
-            '    PyList_Append(py, *field_elem);',
-            '}}'
-        ]
+        pyopendds_type = sequence_type.base_type
+        if isinstance(sequence_type.base_type , PrimitiveType):
+            to_lines = [
+                'Ref field_elem;',
+                # '// doing memcopy',
+                # '//field_value = PyList_New(0);',
+                # '//Py_buffer view;',
+                # '//Py_ssize_t shape[] = {{cpp.length()}};',
+                # '//PyBuffer_FillInfo(&view, NULL, (void*)&cpp, cpp.length(), 0, PyBUF_SIMPLE);',
+                'Ref py_obj = PyMemoryView_FromMemory((char*)cpp.get_buffer(),  cpp.length(), PyBUF_READ);',
+                'py_obj++;',
+                'std::cout << "My type is " << py->ob_type->tp_name << std::endl;',
+                #'// Ref py_obj = PyMemoryView_FromBuffer(&view);',
+                #'// std::cout<<py_obj->ob_type->tp_name<<std::endl;',
+                #'//PyObject_SetAttrString(py,"_buffer",*py_obj);',
+                'std::cout << cpp.length() <<std::endl;',
+                #'//PyObject *function = PyObject_GetAttrString(*py_obj, "tolist");',
+                'py = PyObject_CallMethod(*py_obj,"tolist", NULL);',
+                'std::cout << "py is " << py->ob_type->tp_name << std::endl;',
+                
+
+                
+
+                
+            ]
+        else : 
+            to_lines = [
+                'Ref field_elem;',
+                'field_value = PyList_New(0);',
+                'for (int i = 0; i < cpp.length(); i++) {{',
+                '    {pyopendds_type} elem = cpp[i];',
+                '    field_elem = nullptr;',
+                '    Type<{pyopendds_type}>::cpp_to_python(elem',
+                '    #ifdef CPP11_IDL',
+                '        ()',
+                '    #endif',
+                '        , *field_elem);',
+                '    PyList_Append(py, *field_elem);',
+                '}}'
+            ]
 
         pyopendds_type = cpp_type_name(sequence_type.base_type)
-        from_lines = [
-            'cpp.length(PyList_Size(py));',
-            'for (int i = 0; i < PyList_Size(py); i++) {{',
-            '    {pyopendds_type} elem = cpp[i];',
-            '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem',
-            '#ifdef CPP11_IDL',
-            '    ()',
-            '#endif',
-            '    );',
-            '    cpp[i] = elem;',
-            '}}'
-        ]
+        if isinstance(sequence_type.base_type, PrimitiveType):
+            from_lines = [
+                'cpp.length(PyList_Size(py));',
+                '// youpi !!!!',
+                'for (int i = 0; i < PyList_Size(py); i++) {{',
+                '    {pyopendds_type} elem = cpp[i];',
+                '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem',
+                '#ifdef CPP11_IDL',
+                '    ()',
+                '#endif',
+                '    );',
+                '    cpp[i] = elem;',
+                '}}'
+            ]
+        else : 
+            from_lines = [
+                'cpp.length(PyList_Size(py));',
+                'for (int i = 0; i < PyList_Size(py); i++) {{',
+                '    {pyopendds_type} elem = cpp[i];',
+                '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem',
+                '#ifdef CPP11_IDL',
+                '    ()',
+                '#endif',
+                '    );',
+                '    cpp[i] = elem;',
+                '}}'
+            ]
 
         def line_process(lines):
             return [''] + [

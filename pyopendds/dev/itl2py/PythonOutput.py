@@ -108,14 +108,17 @@ class PythonOutput(Output):
 
     def visit_sequence(self, sequence_type):
         self.context['has_sequence'] = True
+        is_primitive = False
         type = sequence_type.base_type.local_name()
         if type == None :
+            is_primitive = True
             type =  self.primitive_types[sequence_type.base_type.kind][0]
         self.context['types'].append(dict(
             local_name=sequence_type.local_name(),
             type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
             sequence=dict(
-                type = type,
+                type=type,
+                is_primitive=is_primitive,
                 len=sequence_type.max_count,
             ),
         ))
