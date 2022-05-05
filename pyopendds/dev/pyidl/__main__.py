@@ -177,9 +177,11 @@ def mk_tmp_package_proj(args: argparse.Namespace):
         whl_list = glob.glob(os.path.join(args.dist_dir, f"py{args.package_name}*.whl"))
         if len(whl_list):
             package_path = whl_list[0]
+            output_directory = os.path.join(args.build_dir, f"{args.package_name}_output")
+            os.mkdir(output_directory)
             subprocess_check_run(
-                split(f"pip install {package_path} --force-reinstall"),
-                cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"),
+                split(f"pip install {package_path} --force-reinstall --no-deps"),
+                cwd=output_directory,
             )
         else:
             raise FileNotFoundError()

@@ -51,6 +51,6 @@ setup(
         ]
     },
     install_requires=[
-        'jinja2',
+        'jinja2','markupsafe','wheel', 'setuptools>=62'
     ]
 )
