@@ -296,23 +296,22 @@ def run():
     # List IDLs from file
     if args.input_filelist:
         idl_source_filename = os.path.join(current_dir, args.input_filelist)
+        print("List IDLs from:", idl_source_filename)
         # extract list of filenames
         input_idl_filenames = process_idl_file_list(idl_source_filename)
     # List IDLs from arguments
     elif args.input_files:
         input_idl_filenames = args.input_files
-        input_filelist = os.path.join(current_dir, args.input_filelist)
-        args.input_files = process_idl_file_list(input_filelist)
     else:
         raise Exception("Error while parsing the list of IDLs filenames")
 
     # Expand patterns for each filename
-    input_files = []
+    input_idl_filenames_ext = []
     for filename in input_idl_filenames:
         filenames = glob.glob(filename)
-        input_files.extend( filenames )
+        input_idl_filenames_ext.extend( filenames )
 
-    args.input_files = input_idl_filenames
+    args.input_files = input_idl_filenames_ext
 
     if len(args.input_files) == 0:
         print("Error: no IDL files provided.")
