@@ -1,3 +1,9 @@
+python3-opendds (3.20-4a) focal; urgency=medium
+
+  * debug do not use
+
+ -- Dragonfly <dragonfly@upnext.com>  Fri, 01 Jul 2022 16:17:12 +0200
+
 python3-opendds (3.20-3) focal; urgency=medium
 
   * fix release of ressources on exit

@@ -23,6 +23,8 @@ PyObject* Errors::pyopendds_ = nullptr;
 PyObject* Errors::PyOpenDDS_Error_ = nullptr;
 PyObject* Errors::ReturnCodeError_ = nullptr;
 
+std::string _transportMode = "rtps_udp";
+
 namespace {
 
 PyObject* opendds_version_str(PyObject*, PyObject*)
@@ -247,6 +249,36 @@ void delete_participant_var(PyObject* part_capsule)
   }
 }
 
+
+void readConfigFile(const std::string &configFile)
+{
+    std::ifstream cFile (configFile);
+    if (cFile.is_open())
+    {
+        std::string line;
+        while(getline(cFile, line))
+       {
+            // line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+            if( line.empty() || line[0] == '#' )
+            {
+                continue;
+            }
+            auto delimiterPos = line.find("=");
+            auto name = line.substr(0, delimiterPos);
+            auto value = line.substr(delimiterPos + 1);
+            std::cout << name << " = " << value << '\n';
+            if(name == "TRANSPORT_MODE")
+            {
+                _transportMode = value;
+            }
+        }
+    }
+    else
+    {
+        std::cout << "Error: file note found: " << configFile << std::endl;
+    }
+}
+
 /**
  * create_participant(participant: DomainParticipant, domain: int) -> None
  */
@@ -267,8 +299,11 @@ PyObject* create_participant(PyObject* self, PyObject* args)
         transport_config =
         TheTransportRegistry->create_config("default_rtps_transport_config_"+ std::to_string(domain));
 
+        readConfigFile("/etc/dragonfly-application/conf/config.conf");
+    
+
         transport_inst =
-        TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), "rtps_udp");
+        TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), _transportMode);
 
     }else{
         // Create SHMEM transport config for this domainId
