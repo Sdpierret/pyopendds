@@ -114,7 +114,7 @@ void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
       throw Exception("callback undefined", PyExc_TypeError);
     }
 
-    PyGILState_STATE gstate;
+   PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
     try {
         if (PyCallable_Check(callable)) {
@@ -321,7 +321,6 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
 
     Py_BEGIN_ALLOW_THREADS
     
-
     participant->delete_contained_entities();
 
 
