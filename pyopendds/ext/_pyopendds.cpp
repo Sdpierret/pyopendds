@@ -4,6 +4,8 @@
 #include <dds/DCPS/transport/framework/TransportConfig.h>
 #include <dds/DCPS/transport/framework/TransportInst.h>
 #include "dds/DCPS/transport/shmem/ShmemInst.h"
+#include "dds/DCPS/transport/tcp/TcpInst.h"
+#include "dds/DCPS/transport/rtps_udp/RtpsUdpInst.h"
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsCoreC.h>
@@ -24,6 +26,9 @@ PyObject* Errors::PyOpenDDS_Error_ = nullptr;
 PyObject* Errors::ReturnCodeError_ = nullptr;
 
 std::string _transportMode = "rtps_udp";
+bool _useRtpsMulticast = 1;
+double _connRetryBackoffMultiplier = 2.0;
+int _activeConnTimeoutPeriod = 5000;
 
 namespace {
 
@@ -271,7 +276,20 @@ void readConfigFile(const std::string &configFile)
             {
                 _transportMode = value;
             }
+            if(name == "USE_RTPS_MULTICAST")
+            {
+                _useRtpsMulticast = std::stoi(value);
+            }
+            if(name == "TCP_ACTIVE_CONN_TIMEOUT_PERIOD")
+            {
+                _activeConnTimeoutPeriod = std::stoi(value);
+            }
+            if(name == "TCP_CONN_RETRY_BACKOFF_MULTIPLIER")
+            {
+                _connRetryBackoffMultiplier = std::stod(value);
+            }
         }
+        cFile.close();
     }
     else
     {
@@ -304,6 +322,22 @@ PyObject* create_participant(PyObject* self, PyObject* args)
 
         transport_inst =
         TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), _transportMode);
+
+        if(_transportMode == "tcp")
+        {
+          OpenDDS::DCPS::TcpInst * tcpInst = static_cast<OpenDDS::DCPS::TcpInst *>(transport_inst.get());
+          if(tcpInst != nullptr) {
+              tcpInst->conn_retry_backoff_multiplier_ = _connRetryBackoffMultiplier;
+              tcpInst->active_conn_timeout_period_ = _activeConnTimeoutPeriod;
+          }
+        }
+        else if (_transportMode == "rtps_udp")
+        {
+          OpenDDS::DCPS::RtpsUdpInst * rtpsUdpInst = static_cast<OpenDDS::DCPS::RtpsUdpInst *>(transport_inst.get());
+          if(rtpsUdpInst != nullptr) {
+              rtpsUdpInst->use_multicast_ = _useRtpsMulticast;
+          }
+        }
 
     }else{
         // Create SHMEM transport config for this domainId
