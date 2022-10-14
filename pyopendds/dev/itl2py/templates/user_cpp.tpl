@@ -2,9 +2,6 @@
 /*{% for name in idl_names %}*/
 #include </*{{ name }}*/TypeSupportImpl.h>
 /*{%- endfor %}*/
-/*{% for name in include_idl_names %}*/
-#include </*{{ name }}*/TypeSupportImpl.h>
-/*{%- endfor %}*/
 #include <iostream>
 #include <sstream>
 
