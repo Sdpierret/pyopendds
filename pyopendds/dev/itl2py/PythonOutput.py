@@ -24,10 +24,10 @@ class PythonOutput(Output):
         PrimitiveType.Kind.i64: ("int", "0"),
         PrimitiveType.Kind.f32: ("float", "0.0"),
         PrimitiveType.Kind.f64: ("float", "0.0"),
-        PrimitiveType.Kind.c8: ("chr", "'\\x00'"),
-        PrimitiveType.Kind.c16: ("str", "'\\x00'"),
-        PrimitiveType.Kind.s8: ("str", "''"),
-        PrimitiveType.Kind.s16: ("str", "''"),
+        PrimitiveType.Kind.c8: ("int", "0"),
+        PrimitiveType.Kind.c16: ("int", "00"),
+        PrimitiveType.Kind.s8: ("int", "''"),
+        PrimitiveType.Kind.s16: ("int", "''"),
     }
 
     def __init__(self, context: dict, name: str):
