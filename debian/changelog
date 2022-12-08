@@ -1,8 +1,14 @@
+python3-opendds (3.20.6-0) focal; urgency=medium
+
+  * change c8 from char to int
+
+ -- Dragonfly <dragonfly@upnext.com>  Thu, 8 Nov 2022 11:43:20 +0100
+
 python3-opendds (3.20.5-3) focal; urgency=medium
 
   * Add setuptools and pip on setup.py depends
 
- -- Dragonfly <dragonfly@upnext.com>  Tue, 6 Nov 2022 17:18:19 +0200
+ -- Dragonfly <dragonfly@upnext.com>  Tue, 3 Dec 2022 17:18:19 +0200
 
 python3-opendds (3.20.5-2) focal; urgency=medium
 
