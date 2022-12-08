@@ -5,7 +5,7 @@
 
 Name:           python3-opendds
 Version:        3.20.6
-Release:        0%{?dist}
+Release:        0
 Summary:        Setuptools extension to build and package CMake projects
 
 License:        MIT
