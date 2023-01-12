@@ -20,7 +20,7 @@ namespace pyopendds {
 class Exception : public std::exception {
 public:
   Exception()
-    : message_(nullptr)
+    : message_("Undefined Exception")
     , pyexc_(nullptr)
   {
     assert(PyErr_Occurred());
@@ -30,23 +30,24 @@ public:
     : message_(message)
     , pyexc_(pyexc)
   {
+    
   }
 
   PyObject* set() const
   {
-    if (pyexc_ && message_) {
-      PyErr_SetString(pyexc_, message_);
+    if (pyexc_) {
+      PyErr_SetString(pyexc_, message_.c_str());
     }
     return nullptr;
   }
 
   virtual const char* what() const noexcept
   {
-    return message_ ? message_ : "Python Exception Occurred";
+    return pyexc_ ? message_.c_str() : "Python Exception Occurred";
   }
 
 private:
-  const char* message_;
+  const std::string message_;
   PyObject* pyexc_;
 };
 
@@ -95,8 +96,7 @@ T* get_capsule(PyObject* obj)
     PyErr_Clear();
   }
   if (!rv) {
-    PyErr_SetString(PyExc_TypeError,
-      "Python object does not have a valid capsule pointer");
+    throw Exception("Python object does not have a valid capsule pointer", PyExc_TypeError);
   }
   return rv;
 }

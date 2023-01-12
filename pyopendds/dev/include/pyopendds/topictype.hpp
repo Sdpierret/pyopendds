@@ -136,79 +136,86 @@ public:
 
     PyObject* take_next_sample(PyObject* pyreader)
     {
-        DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
-        if (!reader) throw Exception();
+        try{
+            DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
+            if (!reader) throw Exception();
 
-        DataReader* reader_impl = DataReader::_narrow(reader);
-        if (!reader_impl) {
-            throw Exception("Could not narrow reader implementation", Errors::PyOpenDDS_Error());
-        }
+            DataReader* reader_impl = DataReader::_narrow(reader);
+            if (!reader_impl) {
+                throw Exception("Could not narrow reader implementation", Errors::PyOpenDDS_Error());
+            }
 
-// #ifndef __APPLE__
-//         // TODO: wait causes segmentation fault
-//         DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
-//             DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
-//         DDS::WaitSet_var ws = new DDS::WaitSet;
-//         ws->attach_condition(read_condition);
+    // #ifndef __APPLE__
+    //         // TODO: wait causes segmentation fault
+    //         DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
+    //             DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
+    //         DDS::WaitSet_var ws = new DDS::WaitSet;
+    //         ws->attach_condition(read_condition);
 
-//         DDS::ConditionSeq active;
-//         const DDS::Duration_t max_wait_time = {60, 0};
+    //         DDS::ConditionSeq active;
+    //         const DDS::Duration_t max_wait_time = {60, 0};
 
-//         if (Errors::check_rc(ws->wait(active, max_wait_time))) {
-//             throw Exception();
-//         }
-//         ws->detach_condition(read_condition);
-//         reader_impl->delete_readcondition(read_condition);
+    //         if (Errors::check_rc(ws->wait(active, max_wait_time))) {
+    //             throw Exception();
+    //         }
+    //         ws->detach_condition(read_condition);
+    //         reader_impl->delete_readcondition(read_condition);
 
-//         IdlType sample;
-//         DDS::SampleInfo info;
-//         if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
-//             throw Exception();
-//         }
-// #else
-        // TODO: fallback to naive implementation
-        
-        IdlType* sample = new IdlType();
-        DDS::SampleInfo info;
-        DDS::ReturnCode_t rc = reader_impl->take_next_sample(*sample, info);
-        if (rc != DDS::RETCODE_OK) {
-            // TODO: Temporarily inhibit this error and let the user check for its return code
-            throw Exception("reader_impl->take_next_sample() failed", Errors::PyOpenDDS_Error());
-            Py_RETURN_NONE;
-        }
-// #endif
-        if (info.valid_data) {
-            PyObject* rv = nullptr;
-            Type<IdlType>::cpp_to_python(*sample, rv);
-            set_capsule(rv, sample, delete_sample);
-            return rv;
-        } else {
-            throw Exception("received invalid data", Errors::PyOpenDDS_Error());
-            Py_RETURN_NONE;
+    //         IdlType sample;
+    //         DDS::SampleInfo info;
+    //         if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
+    //             throw Exception();
+    //         }
+    // #else
+            // TODO: fallback to naive implementation
+            
+            IdlType* sample = new IdlType();
+            DDS::SampleInfo info;
+            DDS::ReturnCode_t rc = reader_impl->take_next_sample(*sample, info);
+            if (rc != DDS::RETCODE_OK) {
+                // TODO: Temporarily inhibit this error and let the user check for its return code
+                throw Exception("reader_impl->take_next_sample() failed", Errors::PyOpenDDS_Error());
+            }
+    // #endif
+            if (info.valid_data) {
+                PyObject* rv = nullptr;
+                Type<IdlType>::cpp_to_python(*sample, rv);
+                set_capsule(rv, sample, delete_sample);
+                return rv;
+            } else {
+                throw Exception("received invalid data", Errors::PyOpenDDS_Error());
+            }
+
+        }catch(Exception e) {
+            return e.set();
         }
     }
 
     PyObject* write(PyObject* pywriter, PyObject* pysample)
     {
-        DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(pywriter);
-        if (!writer) throw Exception();
+        try{
+            DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(pywriter);
+            if (!writer) throw Exception();
 
-        DataWriter* writer_impl = DataWriter::_narrow(writer);
-        if (!writer_impl) {
-            throw Exception("Could not narrow writer implementation", Errors::PyOpenDDS_Error());
+            DataWriter* writer_impl = DataWriter::_narrow(writer);
+            if (!writer_impl) {
+                throw Exception("Could not narrow writer implementation", Errors::PyOpenDDS_Error());
+            }
+
+            IdlType rv;
+                Type<IdlType>::python_to_cpp(pysample, rv);
+
+            DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
+            if (rc != DDS::RETCODE_OK) {
+                // TODO: Temporarily inhibit this exception and let the user check for its return code
+                // throw Exception("Writer could not write sample", Errors::PyOpenDDS_Error());
+            }
+            //  if (Errors::check_rc(rc)) return nullptr;
+
+            return PyLong_FromLong(rc);
+        }catch(Exception e) {
+            return e.set();
         }
-
-        IdlType rv;
-        Type<IdlType>::python_to_cpp(pysample, rv);
-
-        DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
-        if (rc != DDS::RETCODE_OK) {
-            // TODO: Temporarily inhibit this exception and let the user check for its return code
-            // throw Exception("Writer could not write sample", Errors::PyOpenDDS_Error());
-        }
-        //  if (Errors::check_rc(rc)) return nullptr;
-
-        return PyLong_FromLong(rc);
     }
 };
 

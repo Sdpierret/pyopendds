@@ -29,13 +29,23 @@ public:
 
     static void python_to_cpp(PyObject* py, T& cpp)
     {
-        // PyBool_Check always return true
-        //if (PyBool_Check(py)) throw Exception("Not a boolean", PyExc_ValueError);
 
-        if (py == Py_True) {
+        if (! PyLong_Check(py)) {
+            std::string class_name = std::string("bool");
+            std::string type_name = std::string(Py_TYPE(py)->tp_name);
+            std::string msg = "class_name = " + type_name + ", type_name = " + class_name + " \n";
+            throw Exception(msg.c_str(), PyExc_TypeError);
+        }
+        
+        int ret = PyObject_IsTrue(py);
+        if (ret==1) {
             cpp = true;
-        } else {
+        } else if(ret==0) {
             cpp = false;
+        } else {
+            std::string actual_type = std::string(PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__")));
+            std::string msg = "python_to_cpp: PyObject( " +  actual_type + " ) is not True or False.";
+            throw Exception(msg.c_str(), PyExc_TypeError);
         }
     }
 };

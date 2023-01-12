@@ -92,8 +92,7 @@ public:
         PySys_WriteStderr("equals = %d\nis_subclass = %d\n", equals, is_subclass);
         std::string actual_type = std::string(PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__")));
         std::string msg = "python_to_cpp: PyObject( " +  actual_type + " ) is not of type /*{{ type.local_name }}*/ nor is not parent class.";
-        PyErr_SetString(PyExc_TypeError, msg.c_str());
-        throw PyErr_Occurred();
+        throw Exception(msg.c_str(), PyExc_TypeError);
       }
     } else {
       Ref args;
