@@ -99,16 +99,17 @@ public:
 
     void register_type(PyObject* pyparticipant)
     {
+        printf("cc register_type \n");
         // Get DomainParticipant_var
-        DDS::DomainParticipant* participant =
-        get_capsule<DDS::DomainParticipant>(pyparticipant);
-        if (!participant) {
+        DDS::DomainParticipant_var *participant =
+        get_capsule<DDS::DomainParticipant_var>(pyparticipant);
+        if (!(*participant)) {
             throw Exception("Could not get native participant", PyExc_TypeError);
         }
 
         // Register with OpenDDS
         TypeSupportImpl* type_support = new TypeSupportImpl;
-        if (type_support->register_type(participant, "") != DDS::RETCODE_OK) {
+        if (type_support->register_type(participant->in(), "") != DDS::RETCODE_OK) {
             delete type_support;
             type_support = nullptr;
             throw Exception("Could not create register type", Errors::PyOpenDDS_Error());

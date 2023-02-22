@@ -108,6 +108,7 @@ DataReaderListenerImpl::~DataReaderListenerImpl()
 
 void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
 {
+  printf("cc DataReaderListenerImpl::on_data_available\n");
     PyObject *callable = _callback;
     PyObject *result = NULL;
 
@@ -133,6 +134,7 @@ void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
         throw e;
     }
     PyGILState_Release(gstate);
+  printf("cc DataReaderListenerImpl::~on_data_available\n");
 }
 
 /// Global Participant Factory
@@ -241,16 +243,19 @@ void delete_participant_var(PyObject* part_capsule)
 {
   printf("cc void delete_participant_var(PyObject* part_capsule)\n");
   if (PyCapsule_CheckExact(part_capsule)) {
-    DDS::DomainParticipant_var participant =
-      static_cast<DDS::DomainParticipant*>(PyCapsule_GetPointer(part_capsule, nullptr));
-    if (participant) {
+    DDS::DomainParticipant_var* participant =
+      static_cast<DDS::DomainParticipant_var*>(PyCapsule_GetPointer(part_capsule, nullptr));
+    if (*(participant)) {
       numParticipant--;
-      participant = nullptr;
+      *(participant) = nullptr;
       if (numParticipant <= 0)
       {
+        Py_BEGIN_ALLOW_THREADS
         printf(">> TheServiceParticipant->shutdown();\n");
-          TheServiceParticipant->shutdown();
+        TheServiceParticipant->shutdown();
+        Py_END_ALLOW_THREADS
       }
+      delete participant;
     }
   }
 }
@@ -295,11 +300,13 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     DDS::DomainParticipantQos qos;
     participant_factory->get_default_participant_qos(qos);
 
-    DDS::DomainParticipant* participant = participant_factory->create_participant(
-        domain, qos, DDS::DomainParticipantListener::_nil(),
-        OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+    DDS::DomainParticipant_var* participant = new DDS::DomainParticipant_var(
+        participant_factory->create_participant(
+          domain, qos, DDS::DomainParticipantListener::_nil(),
+          OpenDDS::DCPS::DEFAULT_STATUS_MASK)
+      );
 
-    if (!participant) {
+    if (!*participant) {
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Participant");
         numParticipant--;
         return nullptr;
@@ -321,19 +328,19 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
   pyparticipant++;
 
   // Get DomainParticipant_var
-  DDS::DomainParticipant* participant =
-    get_capsule<DDS::DomainParticipant>(*pyparticipant);
-  if (!participant) {
+  DDS::DomainParticipant_var* participant =
+    get_capsule<DDS::DomainParticipant_var>(*pyparticipant);
+  if (!(*participant)) {
     return nullptr;
   }
 
     Py_BEGIN_ALLOW_THREADS
     
 
-    participant->delete_contained_entities();
+    (*participant)->delete_contained_entities();
 
 
-    participant_factory->delete_participant(participant);
+    participant_factory->delete_participant(*participant);
     
 
     Py_END_ALLOW_THREADS
@@ -374,13 +381,13 @@ PyObject* create_topic(PyObject* self, PyObject* args)
   pyparticipant++;
 
   // Get DomainParticipant
-  DDS::DomainParticipant* participant = get_capsule<DDS::DomainParticipant>(*pyparticipant);
-  if (!participant) {
+  DDS::DomainParticipant_var* participant = get_capsule<DDS::DomainParticipant_var>(*pyparticipant);
+  if (!(*participant)) {
     return nullptr;
   }
 
   // Create Topic
-  DDS::Topic* topic = participant->create_topic(
+  DDS::Topic* topic = (*participant)->create_topic(
     name, type, TOPIC_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!topic) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Topic");
@@ -467,13 +474,13 @@ PyObject* create_subscriber(PyObject* self, PyObject* args)
   pysubscriber++;
 
   // Get DomainParticipant_var
-  DDS::DomainParticipant* participant = get_capsule<DDS::DomainParticipant>(*pyparticipant);
-  if (!participant) {
+  DDS::DomainParticipant_var* participant = get_capsule<DDS::DomainParticipant_var>(*pyparticipant);
+  if (!(*participant)) {
     return nullptr;
   }
 
   // Create Subscriber
-  DDS::Subscriber* subscriber = participant->create_subscriber(
+  DDS::Subscriber* subscriber = (*participant)->create_subscriber(
     SUBSCRIBER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!subscriber) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Subscriber");
@@ -517,13 +524,13 @@ PyObject* create_publisher(PyObject* self, PyObject* args)
   pypublisher++;
 
   // Get DomainParticipant_var
-  DDS::DomainParticipant* participant = get_capsule<DDS::DomainParticipant>(*pyparticipant);
-  if (!participant) {
+  DDS::DomainParticipant_var* participant = get_capsule<DDS::DomainParticipant_var>(*pyparticipant);
+  if (!(*participant)) {
     return nullptr;
   }
 
   // Create Publisher
-  DDS::Publisher* publisher = participant->create_publisher(
+  DDS::Publisher* publisher = (*participant)->create_publisher(
     PUBLISHER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!publisher) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Publisher");
