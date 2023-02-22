@@ -506,11 +506,12 @@ void delete_publisher_var(PyObject* publisher_capsule)
 {
   printf("cc void delete_publisher_var(PyObject* publisher_capsule)\n");
   if (PyCapsule_CheckExact(publisher_capsule)) {
-    DDS::Publisher_var publisher =
-      static_cast<DDS::Publisher*>(PyCapsule_GetPointer(publisher_capsule, nullptr));
-    if (publisher) {
-      publisher = nullptr;
+    DDS::Publisher_var* publisher_var =
+      static_cast<DDS::Publisher_var*>(PyCapsule_GetPointer(publisher_capsule, nullptr));
+    if (*publisher_var) {
+      *publisher_var = nullptr;
     }
+    delete publisher_var;
   }
 }
 
@@ -534,15 +535,17 @@ PyObject* create_publisher(PyObject* self, PyObject* args)
   }
 
   // Create Publisher
-  DDS::Publisher* publisher = (*participant)->create_publisher(
-    PUBLISHER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
-  if (!publisher) {
+  DDS::Publisher_var* publisher_var = new DDS::Publisher_var(
+      (*participant)->create_publisher(
+      PUBLISHER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK)
+    );
+  if (!(*publisher_var)) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Publisher");
     return nullptr;
   }
 
   // Attach OpenDDS Publisher to Publisher Python Object
-  if (set_capsule(*pypublisher, publisher, delete_publisher_var)) {
+  if (set_capsule(*pypublisher, publisher_var, delete_publisher_var)) {
     return nullptr;
   }
 
@@ -762,8 +765,8 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     pyqos++;
 
     // Get Publisher
-    DDS::Publisher* publisher = get_capsule<DDS::Publisher>(*pypublisher);
-    if (!publisher) return nullptr;
+    DDS::Publisher_var* publisher_var = get_capsule<DDS::Publisher_var>(*pypublisher);
+    if (!(*publisher_var)) return nullptr;
 
     // Get Topic
     DDS::Topic_var* topic_var = get_capsule<DDS::Topic_var>(*pytopic);
@@ -771,12 +774,12 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
 
     // Create QoS
     DDS::DataWriterQos qos;
-    publisher->get_default_datawriter_qos(qos);
+    (*publisher_var)->get_default_datawriter_qos(qos);
     qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
 
     bool isgoodwriterqos = update_writer_qos(*pyqos,qos);
     // Create DataWriter
-    DDS::DataWriter* datawriter = publisher->create_datawriter(
+    DDS::DataWriter* datawriter = (*publisher_var)->create_datawriter(
         topic_var->in(), qos, nullptr,
         OpenDDS::DCPS::DEFAULT_STATUS_MASK);
 
