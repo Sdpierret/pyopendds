@@ -255,8 +255,8 @@ void delete_participant_var(PyObject* part_capsule)
         TheServiceParticipant->shutdown();
         Py_END_ALLOW_THREADS
       }
-      delete participant;
     }
+    delete participant;
   }
 }
 
@@ -335,14 +335,12 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
   }
 
     Py_BEGIN_ALLOW_THREADS
-    
-
+    printf("(*participant)->delete_contained_entities();\n");
     (*participant)->delete_contained_entities();
 
-
+    printf("participant_factory->delete_participant(*participant);\n");
     participant_factory->delete_participant(*participant);
     
-
     Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
@@ -354,10 +352,11 @@ void delete_topic_var(PyObject* topic_capsule)
 {
   printf("cc void delete_topic_var(PyObject* topic_capsule)\n");
   if (PyCapsule_CheckExact(topic_capsule)) {
-    DDS::Topic_var topic = static_cast<DDS::Topic*>(PyCapsule_GetPointer(topic_capsule, nullptr));
-    if (topic) {
-      topic = nullptr;
+    DDS::Topic_var* topic_var = static_cast<DDS::Topic_var*>(PyCapsule_GetPointer(topic_capsule, nullptr));
+    if (*topic_var) {
+      *topic_var = nullptr;
     }
+    delete topic_var;
   }
 }
 
@@ -387,15 +386,17 @@ PyObject* create_topic(PyObject* self, PyObject* args)
   }
 
   // Create Topic
-  DDS::Topic* topic = (*participant)->create_topic(
-    name, type, TOPIC_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
-  if (!topic) {
+  DDS::Topic_var* topic_var = new DDS::Topic_var(
+      (*participant)->create_topic(
+      name, type, TOPIC_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK)
+    );
+  if (!(*topic_var)) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Topic");
     return nullptr;
   }
 
   // Attach OpenDDS Topic to Topic Python Object
-  if (set_capsule(*pytopic, topic, delete_topic_var)) {
+  if (set_capsule(*pytopic, topic_var, delete_topic_var)) {
     return nullptr;
   }
 
@@ -452,11 +453,12 @@ void delete_subscriber_var(PyObject* subscriber_capsule)
 {
   printf("cc void delete_subscriber_var(PyObject* subscriber_capsule)\n");
   if (PyCapsule_CheckExact(subscriber_capsule)) {
-    DDS::Subscriber_var subscriber =
-      static_cast<DDS::Subscriber*>(PyCapsule_GetPointer(subscriber_capsule, nullptr));
-    if (subscriber) {
-      subscriber = nullptr;
+    DDS::Subscriber_var* subscriber_var =
+      static_cast<DDS::Subscriber_var*>(PyCapsule_GetPointer(subscriber_capsule, nullptr));
+    if (*subscriber_var) {
+      *subscriber_var = nullptr;
     }
+    delete subscriber_var;
   }
 }
 
@@ -480,15 +482,17 @@ PyObject* create_subscriber(PyObject* self, PyObject* args)
   }
 
   // Create Subscriber
-  DDS::Subscriber* subscriber = (*participant)->create_subscriber(
-    SUBSCRIBER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
-  if (!subscriber) {
+  DDS::Subscriber_var* subscriber_var = new DDS::Subscriber_var(
+      (*participant)->create_subscriber(
+        SUBSCRIBER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK)
+    );
+  if (!(*subscriber_var)) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Subscriber");
     return nullptr;
   }
 
   // Attach OpenDDS Subscriber to Subscriber Python Object
-  if (set_capsule(*pysubscriber, subscriber, delete_subscriber_var)) {
+  if (set_capsule(*pysubscriber, subscriber_var, delete_subscriber_var)) {
     return nullptr;
   }
 
@@ -688,14 +692,14 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   pyqos++;
 
   // Get Subscriber
-  DDS::Subscriber* subscriber = get_capsule<DDS::Subscriber>(*pysubscriber);
-  if (!subscriber) {
+  DDS::Subscriber_var* subscriber_var = get_capsule<DDS::Subscriber_var>(*pysubscriber);
+  if (!(*subscriber_var)) {
     return nullptr;
   }
 
   // Get Topic
-  DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
-  if (!topic) {
+  DDS::Topic_var* topic_var = get_capsule<DDS::Topic_var>(*pytopic);
+  if (!(*topic_var)) {
     return nullptr;
   }
 
@@ -708,11 +712,11 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   }
   // Create QoS
   DDS::DataReaderQos qos;
-  subscriber->get_default_datareader_qos(qos);
+  (*subscriber_var)->get_default_datareader_qos(qos);
   bool isgoodqos = update_reader_qos(*pyqos,qos);
   // Create DataReader
-  DDS::DataReader* datareader = subscriber->create_datareader(
-    topic, qos, *listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+  DDS::DataReader* datareader = (*subscriber_var)->create_datareader(
+    topic_var->in(), qos, *listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!datareader) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
       return nullptr;
@@ -762,8 +766,8 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     if (!publisher) return nullptr;
 
     // Get Topic
-    DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
-    if (!topic) return nullptr;
+    DDS::Topic_var* topic_var = get_capsule<DDS::Topic_var>(*pytopic);
+    if (!(*topic_var)) return nullptr;
 
     // Create QoS
     DDS::DataWriterQos qos;
@@ -773,7 +777,7 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     bool isgoodwriterqos = update_writer_qos(*pyqos,qos);
     // Create DataWriter
     DDS::DataWriter* datawriter = publisher->create_datawriter(
-        topic, qos, nullptr,
+        topic_var->in(), qos, nullptr,
         OpenDDS::DCPS::DEFAULT_STATUS_MASK);
 
     if (!datawriter) {
