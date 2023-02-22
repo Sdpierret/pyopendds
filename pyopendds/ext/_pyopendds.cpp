@@ -436,10 +436,10 @@ PyObject* create_datareaderlistenerimpl(PyObject* self, PyObject* args)
   pycallback++;
 
   DataReaderListenerImpl* datareaderlistenerimpl = new DataReaderListenerImpl(*pycallback);
-  DDS::DataReaderListener_var* listener_var_ptr = new DDS::DataReaderListener_var(datareaderlistenerimpl);
-  printf("new datareaderlistener_var %p\n", (void*)listener_var_ptr);
+  DDS::DataReaderListener_var* listener_var = new DDS::DataReaderListener_var(datareaderlistenerimpl);
+  printf("new datareaderlistener_var %p\n", (void*)listener_var);
   // Attach OpenDDS Topic to Topic Python Object
-  if (set_capsule(*pydatareaderlistenerimpl, listener_var_ptr, delete_datareaderlistenerimpl_var)) {
+  if (set_capsule(*pydatareaderlistenerimpl, listener_var, delete_datareaderlistenerimpl_var)) {
     return nullptr;
   }
 
@@ -559,14 +559,16 @@ void delete_datareader_var(PyObject* reader_capsule)
 {
   printf("cc void delete_datareader_var(PyObject* reader_capsule)\n");
   if (PyCapsule_CheckExact(reader_capsule)) {
-    DDS::DataReader_var reader =
-      static_cast<DDS::DataReader*>(PyCapsule_GetPointer(reader_capsule, nullptr));
-    if (reader) {
-        DDS::DataReaderListener_ptr listener = reader->get_listener();
-        free(listener);
-        listener = nullptr;
-        reader = nullptr;
+    DDS::DataReader_var* datareader =
+      static_cast<DDS::DataReader_var*>(PyCapsule_GetPointer(reader_capsule, nullptr));
+    if (*datareader) {
+        // unsure...
+        // DDS::DataReaderListener_ptr listener = reader->get_listener();
+        // free(listener);
+        // listener = nullptr;
+        *datareader = nullptr;
     }
+    delete datareader;
   }
 }
 
@@ -718,15 +720,17 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   (*subscriber_var)->get_default_datareader_qos(qos);
   bool isgoodqos = update_reader_qos(*pyqos,qos);
   // Create DataReader
-  DDS::DataReader* datareader = (*subscriber_var)->create_datareader(
-    topic_var->in(), qos, *listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
-  if (!datareader) {
+  DDS::DataReader_var* datareader_var = new DDS::DataReader_var(
+      (*subscriber_var)->create_datareader(
+      topic_var->in(), qos, *listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK)
+    );
+  if (!(*datareader_var)) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
       return nullptr;
   }
 
     // Attach OpenDDS DataReader to DataReader Python Object
-    if (set_capsule(*pydatareader, datareader, delete_datareader_var)) {
+    if (set_capsule(*pydatareader, datareader_var, delete_datareader_var)) {
         return nullptr;
     }
 
@@ -814,14 +818,14 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
   pydatareader++;
 
   // Get DataReader
-  DDS::DataReader* reader = get_capsule<DDS::DataReader>(*pydatareader);
-  if (!reader) {
+  DDS::DataReader_var* datareader_var = get_capsule<DDS::DataReader_var>(*pydatareader);
+  if (!(*datareader_var)) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to retrieve DataReader Capsule");
     return nullptr;
   }
 
   // Wait
-  DDS::StatusCondition_var condition = reader->get_statuscondition();
+  DDS::StatusCondition_var condition = (*datareader_var)->get_statuscondition();
   condition->set_enabled_statuses(status);
 
 #ifndef __APPLE__

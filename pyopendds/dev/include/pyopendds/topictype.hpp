@@ -135,12 +135,12 @@ public:
         }
     }
 
-    PyObject* take_next_sample(PyObject* pyreader)
+    PyObject* take_next_sample(PyObject* pydatareader)
     {
-        DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
-        if (!reader) throw Exception();
+        DDS::DataReader_var* datareader_var = get_capsule<DDS::DataReader_var>(pydatareader);
+        if (!(*datareader_var)) throw Exception();
 
-        DataReader* reader_impl = DataReader::_narrow(reader);
+        DataReader* reader_impl = DataReader::_narrow(*datareader_var);
         if (!reader_impl) {
             throw Exception("Could not narrow reader implementation", Errors::PyOpenDDS_Error());
         }
