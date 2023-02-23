@@ -202,7 +202,7 @@ class CppOutput(Output):
             ]
         pyopendds_type = cpp_type_name(sequence_type.base_type)
         print(sequence_type.name.itl_name)
-        if False and hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "q8":
+        if False and hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
             from_lines = [
                 "PyTypeObject * type = py->ob_type;",
                 "const char * p = type->tp_name;",
