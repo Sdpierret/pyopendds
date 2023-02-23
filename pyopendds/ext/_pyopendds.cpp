@@ -57,8 +57,8 @@ class DataReaderListenerImpl : public virtual OpenDDS::DCPS::LocalObject<DDS::Da
 
 public:
     DataReaderListenerImpl(PyObject *callback);
+    ~DataReaderListenerImpl();
 
-    void clear();
 
     virtual void on_requested_deadline_missed(
         DDS::DataReader_ptr reader,
@@ -97,11 +97,13 @@ DataReaderListenerImpl::DataReaderListenerImpl(PyObject* callback) :
     _callback = callback;
     Py_XINCREF(_callback);
 }
-
-void DataReaderListenerImpl::clear()
+DataReaderListenerImpl::~DataReaderListenerImpl()
 {
-    Py_XDECREF(_callback);
-    _callback == nullptr;
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  Py_XDECREF(_callback);
+  _callback == nullptr;
+  PyGILState_Release(gstate);
 }
 
 void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
@@ -397,7 +399,6 @@ void delete_datareaderlistenerimpl_var(PyObject* datareaderlistenerimpl_capsule)
   if (PyCapsule_CheckExact(datareaderlistenerimpl_capsule)) {
   DataReaderListenerImpl *datareaderlistenerimpl_var = static_cast<DataReaderListenerImpl*>(PyCapsule_GetPointer(datareaderlistenerimpl_capsule, nullptr));
     if (datareaderlistenerimpl_var) {
-      datareaderlistenerimpl_var->clear();
       datareaderlistenerimpl_var = nullptr;
     }
   }
