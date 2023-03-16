@@ -268,7 +268,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
         TheTransportRegistry->create_config("default_rtps_transport_config_"+ std::to_string(domain));
 
         transport_inst =
-        TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), "rtps_udp");
+        TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), "udp");
 
     }else{
         // Create SHMEM transport config for this domainId
