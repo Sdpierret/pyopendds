@@ -4,6 +4,8 @@
 #include <dds/DCPS/transport/framework/TransportConfig.h>
 #include <dds/DCPS/transport/framework/TransportInst.h>
 #include "dds/DCPS/transport/shmem/ShmemInst.h"
+#include "dds/DCPS/transport/udp/UdpInst.h"
+#include "dds/DCPS/transport/rtps_udp/RtpsUdpInst.h"
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsCoreC.h>
@@ -264,11 +266,12 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     OpenDDS::DCPS::TransportConfig_rch transport_config;
     OpenDDS::DCPS::TransportInst_rch transport_inst;
     if (isRtpstransport==1){
-        transport_config =
-        TheTransportRegistry->create_config("default_rtps_transport_config_"+ std::to_string(domain));
-
-        transport_inst =
-        TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), "udp");
+        transport_config = TheTransportRegistry->create_config("default_rtps_transport_config_"+ std::to_string(domain));
+        transport_inst = TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), "rtps_udp");
+        OpenDDS::DCPS::RtpsUdpInst * transportInst = static_cast<OpenDDS::DCPS::RtpsUdpInst *>(transport_inst.get());
+        if(transportInst != nullptr) {
+            transportInst->use_multicast_ = 0; // disable multicast
+        }
 
     }else{
         // Create SHMEM transport config for this domainId
