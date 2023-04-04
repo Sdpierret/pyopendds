@@ -202,16 +202,28 @@ class CppOutput(Output):
             ]
         pyopendds_type = cpp_type_name(sequence_type.base_type)
         print(sequence_type.name.itl_name)
-        if False and hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "q8":
+        if hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
             from_lines = [
-                "PyTypeObject * type = py->ob_type;",
-                "const char * p = type->tp_name;",
-                "Py_buffer * view = (Py_buffer *) malloc(sizeof(*view));",
-                "int error = PyObject_GetBuffer(py, view, PyBUF_SIMPLE);",
-                "char* buf = cpp.allocbuf(view->len);",
-                "memcpy(buf, view->buf, view->len);",
-                "//cpp.replace(view->len, view->len, (char*)view->buf);",
-                "free(view);"
+                # "PyTypeObject * type = py->ob_type;",
+                # "const char * p = type->tp_name;",
+                # "if (strcmp(p, \"Py_buffer\") == 0) {{",
+                " Py_buffer * buf = PyMemoryView_GET_BUFFER(py);",
+                " char * ptr = (char *) buf->buf;",
+                " cpp.replace(buf->len, buf->len, ptr);"
+                # "}}",
+                # "else {{ printf(\"%s\", p); }}"
+                # "else {{",
+                #     "cpp.length(PyList_Size(py));",
+                # "    for (int i = 0; i < PyList_Size(py); i++) {{",
+                # "        {pyopendds_type} elem = cpp[i];",
+                # "        Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem",
+                # "#ifdef CPP11_IDL",
+                # "        ()",
+                # "#endif",
+                # "        );",
+                # "        cpp[i] = elem;",
+                # "    }}",
+                # "}}"
             ]
         else:
             from_lines = [
@@ -238,17 +250,20 @@ class CppOutput(Output):
 
         sequence_to_lines.extend(line_process(to_lines))
         sequence_from_lines.extend(line_process(from_lines))
-        
-        self.context["types"].append(
-            {
-                "cpp_name": cpp_name(sequence_type.name.parts),
-                "name_parts": sequence_type.parent_name().parts,
-                "local_name": sequence_type.local_name(),
-                "to_lines": "\n".join(sequence_to_lines),
-                "from_lines": "\n".join(sequence_from_lines),
-                "new_lines": "\n".join(["args = PyTuple_New(0);"]),
-                "is_topic_type": sequence_type.is_topic_type,
-                "sequence": True,
-                "to_replace": False,
-            }
-        )
+
+        cpp_context_dict = {
+            "name_parts": sequence_type.parent_name().parts,
+            "local_name": sequence_type.local_name(),
+            "to_lines": "\n".join(sequence_to_lines),
+            "from_lines": "\n".join(sequence_from_lines),
+            "new_lines": "\n".join(["args = PyTuple_New(0);"]),
+            "is_topic_type": sequence_type.is_topic_type,
+            "sequence": True,
+            "to_replace": False,
+            "cpp_name": cpp_name(sequence_type.name.parts),
+        }
+        if hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
+            cpp_context_dict["bypass_checkup"] = True
+        else:
+            cpp_context_dict["bypass_checkup"] = False
+        self.context["types"].append(cpp_context_dict)

@@ -85,7 +85,7 @@ public:
       int equals = class_name.compare(type_name);
 
       bool is_subclass = PyObject_IsSubclass(cls, PyObject_Type(py));
-      
+      /*{% if type.bypass_checkup == False %}*/
       // if pas equal ou pas subclass
       if (equals != 0 && is_subclass == false) {
         PySys_WriteStderr("class_name = %s, type_name = %s\n", class_name.c_str(), type_name.c_str());
@@ -95,6 +95,8 @@ public:
         PyErr_SetString(PyExc_TypeError, msg.c_str());
         throw PyErr_Occurred();
       }
+      /*{% endif %}*/
+
     } else {
       Ref args;
       /*{{ type.new_lines | indent(6) }}*/
